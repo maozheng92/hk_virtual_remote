@@ -38,7 +38,7 @@ After adding the integration, choose a name, optional device IP, and control mod
 In **基础设置 / Basic settings** you can also link:
 
 - **开机实体**: optional switch / script / scene / `input_boolean` used to turn the device on
-- **开关状态反馈**: optional `binary_sensor` whose on/off state is the real device power (smart plug, TV power, current-clamp helper). The virtual TV follows this sensor. Leave empty to keep ping / power-sensor / optimistic state
+- **开关状态反馈（可选）** (`power_binary_sensor`): optional `binary_sensor` whose on/off state is the real device power (smart plug, TV power, current-clamp helper). The virtual TV follows this sensor. Leave empty to keep ping / power-sensor / optimistic state
 - **功率传感器**: optional numeric power (watt) sensor as a fallback on/off heuristic
 
 ## Releasing (maintainers)
