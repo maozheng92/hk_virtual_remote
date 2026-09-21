@@ -114,7 +114,12 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_basic_config(self, user_input=None):
         current_mode = self.options.get(CONF_MODE, MODE_ACTION)
-        keys = [CONF_DEVICE_IP, CONF_POWER_ON_ENTITY, CONF_POWER_SENSOR]
+        keys = [
+            CONF_DEVICE_IP,
+            CONF_POWER_ON_ENTITY,
+            CONF_POWER_BINARY_SENSOR,
+            CONF_POWER_SENSOR,
+        ]
         if current_mode == MODE_ACTION:
             keys.insert(1, CONF_MODE)
 
@@ -141,6 +146,12 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
                 description={"suggested_value": self.options.get(CONF_POWER_ON_ENTITY)},
             ): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain=["switch", "script", "scene", "input_boolean"])
+            ),
+            vol.Optional(
+                CONF_POWER_BINARY_SENSOR,
+                description={"suggested_value": self.options.get(CONF_POWER_BINARY_SENSOR)},
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="binary_sensor")
             ),
             vol.Optional(
                 CONF_POWER_SENSOR,
@@ -170,6 +181,12 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
                         ],
                         mode=selector.SelectSelectorMode.LIST,
                     )
+                ),
+                vol.Optional(
+                    CONF_POWER_BINARY_SENSOR,
+                    description={"suggested_value": self.options.get(CONF_POWER_BINARY_SENSOR)},
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="binary_sensor")
                 ),
                 vol.Optional(
                     CONF_POWER_SENSOR,

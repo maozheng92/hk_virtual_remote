@@ -1,0 +1,104 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Create remote",
+        "data": {
+          "name": "Device name",
+          "device_ip": "Device IP address",
+          "remote_mode": "Control mode"
+        }
+      }
+    },
+    "error": {
+      "device_ip_required": "Phicomm mode and ADB mode require a device IP."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Remote settings",
+        "menu_options": {
+          "basic_config": "🛠️ Basic settings (IP/mode)",
+          "pwr_btn": "🔌 Power button scripts",
+          "nav_btn": "🧭 Navigation button scripts",
+          "media_btn": "🔊 Volume and media scripts",
+          "source_config": "📺 Sources and apps"
+        }
+      },
+      "basic_config": {
+        "title": "Basic settings",
+        "data": {
+          "device_ip": "Device IP",
+          "power_on_entity": "Power-on entity (optional)",
+          "power_binary_sensor": "Switch state feedback (optional)",
+          "remote_mode": "Control mode",
+          "power_sensor": "Power sensor (optional)"
+        },
+        "data_description": {
+          "power_binary_sensor": "Select an existing binary_sensor as the real on/off state (for example a smart plug, TV power sensor, or current-clamp helper). The virtual remote follows that sensor; leave empty to keep ping, power-sensor, or optimistic state."
+        }
+      },
+      "pwr_btn": {
+        "title": "Power button scripts",
+        "data": {
+          "btn_power_on": "Power on action",
+          "btn_power_off": "Power off action"
+        }
+      },
+      "nav_btn": {
+        "title": "Navigation button scripts",
+        "data": {
+          "arrow_up": "Up",
+          "arrow_down": "Down",
+          "arrow_left": "Left",
+          "arrow_right": "Right",
+          "select": "Select",
+          "back": "Back",
+          "information": "Menu"
+        }
+      },
+      "media_btn": {
+        "title": "Volume and media scripts",
+        "data": {
+          "btn_volume_up": "Volume up",
+          "btn_volume_down": "Volume down",
+          "btn_mute": "Mute",
+          "btn_play_pause": "Play/Pause"
+        }
+      },
+      "source_config": {
+        "title": "Source management",
+        "description": "Current list:\n{current_sources}",
+        "data": {
+          "action": "Choose an action"
+        }
+      },
+      "source_add": {
+        "title": "Add source",
+        "data": {
+          "name": "Name",
+          "actions": "Action sequence"
+        }
+      },
+      "source_del": {
+        "title": "Delete source",
+        "description": "Select the source to remove:",
+        "data": {
+          "idx": "Source"
+        }
+      },
+      "sync_done": {
+        "title": "Sync complete",
+        "description": "{msg}"
+      }
+    },
+    "error": {
+      "device_ip_required": "Phicomm mode and ADB mode require a device IP."
+    },
+    "abort": {
+      "no_ip": "No device IP is configured, so the app list cannot be synced.",
+      "sync_failed": "Failed to sync the app list. Check that the device is online."
+    }
+  }
+}
