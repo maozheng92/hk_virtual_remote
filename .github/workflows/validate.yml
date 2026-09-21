@@ -34,3 +34,7 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
+          # GitHub repo description/topics are settings, not files. GitHub only
+          # detects LICENSE on the default branch after merge. These do not
+          # block HACS custom-repository install (hacs.json + manifest do).
+          ignore: topics description license

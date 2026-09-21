@@ -49,6 +49,8 @@ HACS uses **GitHub Releases** as the integration version. Tags alone are not eno
 
 3. The [Release workflow](.github/workflows/release.yml) publishes a GitHub Release for that tag. HACS will then show `v1.1.0` instead of a commit hash.
 
+GitHub also needs a short **repository description** and **topics** (`home-assistant`, `hacs`, `integration`, `custom-component`) for HACS default-store validation. Those are GitHub settings, not files in this repo.
+
 ## Links
 
 - [Issues](https://github.com/maozheng92/hk_virtual_remote/issues)
