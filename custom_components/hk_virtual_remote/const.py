@@ -6,6 +6,7 @@ MODE_PHICOMM = "mode_phicomm"
 MODE_ADB = "mode_adb"
 CONF_POWER_SENSOR = "power_sensor"
 CONF_POWER_ON_ENTITY = "power_on_entity"
+CONF_POWER_BINARY_SENSOR = "power_binary_sensor"
 CONF_POWER_THRESHOLD = "power_threshold"
 DEFAULT_POWER_THRESHOLD = 10.0
 CONF_SOURCES = "sources"

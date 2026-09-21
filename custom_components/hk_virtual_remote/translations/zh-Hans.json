@@ -31,8 +31,12 @@
         "data": {
           "device_ip": "设备 IP",
           "power_on_entity": "开机实体 (可选)",
+          "power_binary_sensor": "开关状态反馈 (可选)",
           "remote_mode": "控制模式",
           "power_sensor": "功率传感器 (可选)"
+        },
+        "data_description": {
+          "power_binary_sensor": "选择已有的 binary_sensor 作为设备真实开关状态（例如智能插座通电、电视电源、电流钳辅助实体）。虚拟遥控器会跟随该传感器的开/关；留空则沿用原来的探测或乐观状态。"
         }
       },
       "pwr_btn": {

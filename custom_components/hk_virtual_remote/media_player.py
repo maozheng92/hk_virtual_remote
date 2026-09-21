@@ -9,9 +9,11 @@ from homeassistant.components.media_player import (
     MediaPlayerEntityFeature,
     MediaPlayerState,
 )
+from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.script import Script
 
@@ -53,6 +55,17 @@ HK_KEY_MAP = {
 }
 
 
+def binary_sensor_means_on(state_value):
+    """Return True/False for on/off, or None when unknown/unavailable."""
+    if state_value in (None, STATE_UNAVAILABLE, STATE_UNKNOWN):
+        return None
+    if state_value == STATE_ON:
+        return True
+    if state_value == STATE_OFF:
+        return False
+    return None
+
+
 async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities([HKVirtualRemote(hass, entry)])
 
@@ -88,6 +101,7 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
         self._sources = self._config.get(CONF_SOURCES, [])
         self._power_on_entity = self._config.get(CONF_POWER_ON_ENTITY)
         self._power_sensor = self._config.get(CONF_POWER_SENSOR)
+        self._power_binary_sensor = self._config.get(CONF_POWER_BINARY_SENSOR)
 
         if self._mode == MODE_ADB and self._ip:
             self._adb = AdbHandler(self.hass, self._ip)
@@ -132,7 +146,33 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
 
         self._state = MediaPlayerState.ON if actual_on else MediaPlayerState.OFF
 
+    def _binary_sensor_is_on(self):
+        """Return True/False from the feedback sensor, or None if unknown."""
+        entity_id = self._power_binary_sensor
+        if not entity_id:
+            return None
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return None
+        return binary_sensor_means_on(state.state)
+
+    def _apply_binary_sensor_state(self, is_on):
+        """Follow binary_sensor as source of truth; ignore OFF during boot grace."""
+        if is_on:
+            self._optimistic_until = 0
+            self._state = MediaPlayerState.ON
+            self.async_write_ha_state()
+            return
+        if time.time() < self._optimistic_until:
+            return
+        self._state = MediaPlayerState.OFF
+        self.async_write_ha_state()
+
     async def _is_device_online(self):
+        feedback = self._binary_sensor_is_on()
+        if feedback is not None:
+            return feedback
+
         if self._power_sensor:
             p_state = self.hass.states.get(self._power_sensor)
             try:
@@ -352,5 +392,26 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
         self.async_on_remove(
             self.hass.bus.async_listen("homekit_tv_remote_key_pressed", self._handle_hk_event)
         )
+        if self._power_binary_sensor:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass,
+                    [self._power_binary_sensor],
+                    self._handle_power_binary_sensor_event,
+                )
+            )
+            feedback = self._binary_sensor_is_on()
+            if feedback is not None:
+                self._state = MediaPlayerState.ON if feedback else MediaPlayerState.OFF
         self.async_write_ha_state()
         self.hass.async_create_task(self.async_update())
+
+    @callback
+    def _handle_power_binary_sensor_event(self, event):
+        new_state = event.data.get("new_state")
+        if new_state is None:
+            return
+        is_on = binary_sensor_means_on(new_state.state)
+        if is_on is None:
+            return
+        self._apply_binary_sensor_state(is_on)
