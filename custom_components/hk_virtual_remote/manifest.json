@@ -8,5 +8,5 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/maozheng92/hk_virtual_remote/issues",
   "requirements": ["adb_shell>=0.4.0"],
-  "version": "1.2.0"
+  "version": "1.2.1"
 }

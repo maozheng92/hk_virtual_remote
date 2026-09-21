@@ -23,7 +23,7 @@ Or use this My Home Assistant link after HACS is installed:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=maozheng92&repository=hk_virtual_remote&category=integration)
 
-Install a **GitHub Release** (for example `1.2.0` / `v1.2.0`), not a raw git commit. HACS cannot use a commit SHA such as `c745fed` as the integration version.
+Install a **GitHub Release** (for example `1.2.1` / `v1.2.1`), not a raw git commit. HACS cannot use a commit SHA such as `c745fed` as the integration version.
 
 ## Manual install
 
@@ -45,15 +45,15 @@ In **基础设置 / Basic settings** you can also link:
 
 HACS uses **GitHub Releases** as the integration version. Tags alone are not enough.
 
-1. Keep `custom_components/hk_virtual_remote/manifest.json` `version` as the source of truth (semantic version, for example `1.2.0`).
+1. Keep `custom_components/hk_virtual_remote/manifest.json` `version` as the source of truth (semantic version, for example `1.2.1`).
 2. After merging to `main`, create and push a matching tag:
 
    ```bash
-   git tag v1.2.0
-   git push origin v1.2.0
+   git tag v1.2.1
+   git push origin v1.2.1
    ```
 
-3. The [Release workflow](.github/workflows/release.yml) publishes a GitHub Release for that tag. HACS will then show `v1.2.0` instead of a commit hash.
+3. The [Release workflow](.github/workflows/release.yml) publishes a GitHub Release for that tag. HACS will then show `v1.2.1` instead of a commit hash.
 
 GitHub also needs a short **repository description** and **topics** (`home-assistant`, `hacs`, `integration`, `custom-component`) for HACS default-store validation. Those are GitHub settings, not files in this repo.
 
