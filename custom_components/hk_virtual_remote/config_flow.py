@@ -16,7 +16,22 @@ MODE_LABELS = {
     MODE_ACTION: "自定义",
     MODE_PHICOMM: "斐讯",
     MODE_ADB: "ADB",
+    MODE_XIAOMI: "小米万能遥控器",
 }
+
+USER_MODE_OPTIONS = [
+    {"label": "斐讯盒子 (8080)", "value": MODE_PHICOMM},
+    {"label": "ADB 模式 (5555)", "value": MODE_ADB},
+    {"label": "小米万能遥控器", "value": MODE_XIAOMI},
+    {"label": "纯脚本模式", "value": MODE_ACTION},
+]
+
+SWITCHABLE_MODE_OPTIONS = [
+    {"label": "自定义", "value": MODE_ACTION},
+    {"label": "斐讯", "value": MODE_PHICOMM},
+    {"label": "ADB", "value": MODE_ADB},
+    {"label": "小米万能遥控器", "value": MODE_XIAOMI},
+]
 
 
 def _entry_title(config):
@@ -34,12 +49,31 @@ def _mode_requires_device_ip(mode):
     return mode in {MODE_PHICOMM, MODE_ADB}
 
 
+def _mode_requires_xiaomi_remote(mode):
+    return mode == MODE_XIAOMI
+
+
 def _validate_device_ip(mode, device_ip):
     return not _mode_requires_device_ip(mode) or bool(_normalize_text(device_ip))
 
 
+def _validate_xiaomi_remote(mode, remote_entity):
+    return not _mode_requires_xiaomi_remote(mode) or bool(_normalize_text(remote_entity))
+
+
+def _xiaomi_remote_selector():
+    return selector.EntitySelector(
+        selector.EntitySelectorConfig(domain="remote", integration="xiaomi_home")
+    )
+
+
 class HKRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    def _create_entry(self, user_input):
+        return self.async_create_entry(
+            title=_entry_title(user_input), data=user_input, options=user_input
+        )
 
     async def async_step_user(self, user_input=None):
         errors = {}
@@ -50,10 +84,11 @@ class HKRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             mode = user_input.get(CONF_MODE, MODE_ACTION)
             if not _validate_device_ip(mode, user_input.get(CONF_DEVICE_IP)):
                 errors["base"] = "device_ip_required"
+            elif mode == MODE_XIAOMI:
+                self._user_input = user_input  # used by async_step_xiaomi
+                return await self.async_step_xiaomi()
             else:
-                return self.async_create_entry(
-                    title=_entry_title(user_input), data=user_input, options=user_input
-                )
+                return self._create_entry(user_input)
         return self.async_show_form(
             step_id="user",
             errors=errors,
@@ -63,14 +98,35 @@ class HKRemoteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Optional(CONF_DEVICE_IP): selector.TextSelector(),
                     vol.Required(CONF_MODE, default=MODE_PHICOMM): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=[
-                                {"label": "斐讯盒子 (8080)", "value": MODE_PHICOMM},
-                                {"label": "ADB 模式 (5555)", "value": MODE_ADB},
-                                {"label": "纯脚本模式", "value": MODE_ACTION},
-                            ],
+                            options=USER_MODE_OPTIONS,
                             mode=selector.SelectSelectorMode.LIST,
                         )
                     ),
+                }
+            ),
+        )
+
+    async def async_step_xiaomi(self, user_input=None):
+        errors = {}
+        if user_input:
+            user_input = dict(user_input)
+            user_input[CONF_XIAOMI_REMOTE] = _normalize_text(user_input.get(CONF_XIAOMI_REMOTE))
+            user_input[CONF_XIAOMI_IR_DEVICE] = (
+                _normalize_text(user_input.get(CONF_XIAOMI_IR_DEVICE)) or DEFAULT_XIAOMI_IR_DEVICE
+            )
+            if not _validate_xiaomi_remote(MODE_XIAOMI, user_input.get(CONF_XIAOMI_REMOTE)):
+                errors["base"] = "xiaomi_remote_required"
+            else:
+                return self._create_entry({**getattr(self, "_user_input", {}), **user_input})
+        return self.async_show_form(
+            step_id="xiaomi",
+            errors=errors,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_XIAOMI_REMOTE): _xiaomi_remote_selector(),
+                    vol.Required(
+                        CONF_XIAOMI_IR_DEVICE, default=DEFAULT_XIAOMI_IR_DEVICE
+                    ): selector.TextSelector(),
                 }
             ),
         )
@@ -106,9 +162,12 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
         )
         return self.async_create_entry(title="", data=final_config)
 
+    def _uses_mapped_buttons(self):
+        return self.options.get(CONF_MODE, MODE_ACTION) in {MODE_ACTION, MODE_XIAOMI}
+
     async def async_step_init(self, user_input=None):
         menu_options = ["basic_config", "source_config"]
-        if self.options.get(CONF_MODE, MODE_ACTION) == MODE_ACTION:
+        if self._uses_mapped_buttons():
             menu_options[1:1] = ["pwr_btn", "nav_btn", "media_btn"]
         return self.async_show_menu(step_id="init", menu_options=menu_options)
 
@@ -119,8 +178,10 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
             CONF_POWER_ON_ENTITY,
             CONF_POWER_BINARY_SENSOR,
             CONF_POWER_SENSOR,
+            CONF_XIAOMI_REMOTE,
+            CONF_XIAOMI_IR_DEVICE,
         ]
-        if current_mode == MODE_ACTION:
+        if current_mode in {MODE_ACTION, MODE_XIAOMI}:
             keys.insert(1, CONF_MODE)
 
         errors = {}
@@ -128,12 +189,22 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
             user_input = dict(user_input)
             device_ip = _normalize_text(user_input.get(CONF_DEVICE_IP))
             next_mode = user_input.get(CONF_MODE, current_mode)
+            remote_entity = _normalize_text(user_input.get(CONF_XIAOMI_REMOTE))
             if not _validate_device_ip(next_mode, device_ip):
                 errors["base"] = "device_ip_required"
+            elif not _validate_xiaomi_remote(next_mode, remote_entity):
+                errors["base"] = "xiaomi_remote_required"
             else:
                 user_input[CONF_DEVICE_IP] = device_ip
+                if _mode_requires_xiaomi_remote(next_mode):
+                    user_input[CONF_XIAOMI_REMOTE] = remote_entity
+                    user_input[CONF_XIAOMI_IR_DEVICE] = (
+                        _normalize_text(user_input.get(CONF_XIAOMI_IR_DEVICE))
+                        or DEFAULT_XIAOMI_IR_DEVICE
+                    )
                 for key in keys:
-                    self.options[key] = user_input.get(key)
+                    if key in user_input:
+                        self.options[key] = user_input.get(key)
                 return await self._update_entry()
 
         schema = {
@@ -158,41 +229,21 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
                 description={"suggested_value": self.options.get(CONF_POWER_SENSOR)},
             ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
         }
-        if current_mode == MODE_ACTION:
-            schema = {
-                vol.Optional(
-                    CONF_DEVICE_IP,
-                    description={"suggested_value": self.options.get(CONF_DEVICE_IP)},
-                ): selector.TextSelector(),
-                vol.Optional(
-                    CONF_POWER_ON_ENTITY,
-                    description={"suggested_value": self.options.get(CONF_POWER_ON_ENTITY)},
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=["switch", "script", "scene", "input_boolean"]
-                    )
-                ),
-                vol.Required(CONF_MODE, default=current_mode): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[
-                            {"label": "自定义", "value": MODE_ACTION},
-                            {"label": "斐讯", "value": MODE_PHICOMM},
-                            {"label": "ADB", "value": MODE_ADB},
-                        ],
-                        mode=selector.SelectSelectorMode.LIST,
-                    )
-                ),
-                vol.Optional(
-                    CONF_POWER_BINARY_SENSOR,
-                    description={"suggested_value": self.options.get(CONF_POWER_BINARY_SENSOR)},
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="binary_sensor")
-                ),
-                vol.Optional(
-                    CONF_POWER_SENSOR,
-                    description={"suggested_value": self.options.get(CONF_POWER_SENSOR)},
-                ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
-            }
+        if current_mode in {MODE_ACTION, MODE_XIAOMI}:
+            schema[vol.Required(CONF_MODE, default=current_mode)] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=SWITCHABLE_MODE_OPTIONS,
+                    mode=selector.SelectSelectorMode.LIST,
+                )
+            )
+            schema[vol.Optional(
+                CONF_XIAOMI_REMOTE,
+                description={"suggested_value": self.options.get(CONF_XIAOMI_REMOTE)},
+            )] = _xiaomi_remote_selector()
+            schema[vol.Optional(
+                CONF_XIAOMI_IR_DEVICE,
+                default=self.options.get(CONF_XIAOMI_IR_DEVICE) or DEFAULT_XIAOMI_IR_DEVICE,
+            )] = selector.TextSelector()
 
         return self.async_show_form(
             step_id="basic_config",
@@ -201,21 +252,31 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def _manage_btns(self, step_id, keys, user_input):
+        xiaomi = self.options.get(CONF_MODE) == MODE_XIAOMI
         if user_input is not None:
             for key in keys:
-                self.options[key] = user_input.get(key)
+                value = user_input.get(key)
+                self.options[key] = _normalize_text(value) if xiaomi else value
             return await self._update_entry()
-        return self.async_show_form(
-            step_id=step_id,
-            data_schema=vol.Schema(
-                {
-                    vol.Optional(
-                        k, description={"suggested_value": self.options.get(k)}
-                    ): selector.ActionSelector()
-                    for k in keys
-                }
-            ),
-        )
+        if xiaomi:
+            schema = {
+                vol.Optional(
+                    k,
+                    description={
+                        "suggested_value": self.options.get(k)
+                        or DEFAULT_XIAOMI_COMMANDS.get(k, "")
+                    },
+                ): selector.TextSelector()
+                for k in keys
+            }
+        else:
+            schema = {
+                vol.Optional(
+                    k, description={"suggested_value": self.options.get(k)}
+                ): selector.ActionSelector()
+                for k in keys
+            }
+        return self.async_show_form(step_id=step_id, data_schema=vol.Schema(schema))
 
     async def async_step_pwr_btn(self, user_input=None):
         return await self._manage_btns(
@@ -256,18 +317,22 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
             return await self.async_step_init()
         sources = self.options.get(CONF_SOURCES, []) or []
         names_str = "\n".join([f"· {s[CONF_SOURCE_NAME]}" for s in sources]) if sources else "暂无"
+        actions = [
+            {"label": "➕ 添加自定义动作源", "value": "add"},
+            {"label": "🗑️ 删除输入源", "value": "del"},
+            {"label": "⬅️ 返回", "value": "back"},
+        ]
+        if self.options.get(CONF_MODE) == MODE_XIAOMI:
+            actions[0] = {"label": "➕ 添加红外输入源", "value": "add"}
+        else:
+            actions.insert(0, {"label": "⚡ 同步斐讯 App", "value": "sync"})
         return self.async_show_form(
             step_id="source_config",
             data_schema=vol.Schema(
                 {
                     vol.Optional("action", default="back"): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=[
-                                {"label": "⚡ 同步斐讯 App", "value": "sync"},
-                                {"label": "➕ 添加自定义动作源", "value": "add"},
-                                {"label": "🗑️ 删除输入源", "value": "del"},
-                                {"label": "⬅️ 返回", "value": "back"},
-                            ],
+                            options=actions,
                             mode=selector.SelectSelectorMode.LIST,
                         )
                     )
@@ -304,6 +369,7 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_abort(reason="sync_failed")
 
     async def async_step_source_add(self, user_input=None):
+        xiaomi = self.options.get(CONF_MODE) == MODE_XIAOMI
         if user_input:
             name = user_input["name"]
             source_key = f"custom_src_{int(time.time())}"
@@ -312,22 +378,26 @@ class HKRemoteOptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     CONF_SOURCE_NAME: name,
                     CONF_SOURCE_ID: source_key,
-                    CONF_SOURCE_ICON: "mdi:script-text-outline",
+                    CONF_SOURCE_ICON: (
+                        "mdi:infrared" if xiaomi else "mdi:script-text-outline"
+                    ),
                 }
             )
             self.options[CONF_SOURCES] = srcs
-            self.options[source_key] = user_input.get("actions")
+            if xiaomi:
+                self.options[source_key] = _normalize_text(
+                    user_input.get(CONF_SOURCE_COMMAND)
+                )
+            else:
+                self.options[source_key] = user_input.get("actions")
             return await self._update_entry()
 
-        return self.async_show_form(
-            step_id="source_add",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("name"): selector.TextSelector(),
-                    vol.Optional("actions"): selector.ActionSelector(),
-                }
-            ),
-        )
+        schema = {vol.Required("name"): selector.TextSelector()}
+        if xiaomi:
+            schema[vol.Required(CONF_SOURCE_COMMAND)] = selector.TextSelector()
+        else:
+            schema[vol.Optional("actions")] = selector.ActionSelector()
+        return self.async_show_form(step_id="source_add", data_schema=vol.Schema(schema))
 
     async def async_step_source_del(self, user_input=None):
         if user_input:
