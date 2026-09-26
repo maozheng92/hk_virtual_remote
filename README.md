@@ -6,7 +6,6 @@ Supports:
 
 - **Phicomm** boxes (HTTP on port 8080)
 - **ADB** devices (port 5555)
-- **Xiaomi universal remote** via [ha_xiaomi_home](https://github.com/maozheng92/ha_xiaomi_home) (`chuangmi.ir.v2`)
 - **Script / action** mode (map every button to Home Assistant scripts)
 
 ## HACS install (recommended)
@@ -24,7 +23,7 @@ Or use this My Home Assistant link after HACS is installed:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=maozheng92&repository=hk_virtual_remote&category=integration)
 
-Install a **GitHub Release** (for example `1.3.0` / `v1.3.0`), not a raw git commit. HACS cannot use a commit SHA such as `c745fed` as the integration version.
+Install a **GitHub Release** (for example `1.2.1` / `v1.2.1`), not a raw git commit. HACS cannot use a commit SHA such as `c745fed` as the integration version.
 
 ## Manual install
 
@@ -34,52 +33,27 @@ Install a **GitHub Release** (for example `1.3.0` / `v1.3.0`), not a raw git com
 
 ## Configuration
 
-After adding the integration, choose a name, optional device IP, and control mode (Phicomm / ADB / Xiaomi / scripts). Open the integration options to map power, navigation, volume, and source buttons.
-
-### Xiaomi universal remote
-
-Requires [Xiaomi Home](https://github.com/maozheng92/ha_xiaomi_home) with the `chuangmi.ir.v2` remote imported. Learn codes first (same as Broadlink):
-
-```yaml
-action: remote.learn_command
-target:
-  entity_id: remote.living_room_ir
-data:
-  device: television
-  command: power
-```
-
-Then add this integration in **小米万能遥控器** mode, pick that `remote` entity, and set **红外设备名** to the same `device` (for example `television`). Default command names:
-
-| Button | Command |
-| --- | --- |
-| Power on / off | `power` |
-| Up / Down / Left / Right | `up` / `down` / `left` / `right` |
-| Select / Back / Menu | `select` / `back` / `menu` |
-| Volume / Mute / Play | `volume_up` / `volume_down` / `mute` / `play_pause` |
-
-Override any name under 电源/导航/音量按键. Home Assistant and the remote must be on the same LAN (UDP 54321); Docker needs host network.
+After adding the integration, choose a name, optional device IP, and control mode (Phicomm / ADB / scripts). Open the integration options to map power, navigation, volume, and source buttons.
 
 In **基础设置 / Basic settings** you can also link:
 
 - **开机实体**: optional switch / script / scene / `input_boolean` used to turn the device on
 - **开关状态反馈（可选）** (`power_binary_sensor`): optional `binary_sensor` whose on/off state is the real device power (smart plug, TV power, current-clamp helper). The virtual TV follows this sensor. Leave empty to keep ping / power-sensor / optimistic state
 - **功率传感器**: optional numeric power (watt) sensor as a fallback on/off heuristic
-- **小米遥控实体 / 红外设备名**: used only in Xiaomi mode
 
 ## Releasing (maintainers)
 
 HACS uses **GitHub Releases** as the integration version. Tags alone are not enough.
 
-1. Keep `custom_components/hk_virtual_remote/manifest.json` `version` as the source of truth (semantic version, for example `1.3.0`).
+1. Keep `custom_components/hk_virtual_remote/manifest.json` `version` as the source of truth (semantic version, for example `1.2.1`).
 2. After merging to `main`, create and push a matching tag:
 
    ```bash
-   git tag v1.3.0
-   git push origin v1.3.0
+   git tag v1.2.1
+   git push origin v1.2.1
    ```
 
-3. The [Release workflow](.github/workflows/release.yml) publishes a GitHub Release for that tag. HACS will then show `v1.3.0` instead of a commit hash.
+3. The [Release workflow](.github/workflows/release.yml) publishes a GitHub Release for that tag. HACS will then show `v1.2.1` instead of a commit hash.
 
 GitHub also needs a short **repository description** and **topics** (`home-assistant`, `hacs`, `integration`, `custom-component`) for HACS default-store validation. Those are GitHub settings, not files in this repo.
 
