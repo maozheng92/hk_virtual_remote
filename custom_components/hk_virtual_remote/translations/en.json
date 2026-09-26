@@ -9,17 +9,6 @@
           "remote_mode": "Control mode"
         }
       },
-      "xiaomi": {
-        "title": "Xiaomi universal remote",
-        "description": "Choose the Xiaomi Home `remote` entity from ha_xiaomi_home, and the IR device name used when learning codes (Settings → Infrared).",
-        "data": {
-          "xiaomi_remote": "Xiaomi remote entity",
-          "xiaomi_ir_device": "IR device name"
-        },
-        "data_description": {
-          "xiaomi_ir_device": "Must match the `device` name used with remote.learn_command, for example television."
-        }
-      },
       "basic_config": {
         "title": "Basic settings",
         "data": {
@@ -27,20 +16,15 @@
           "power_on_entity": "Power-on entity (optional)",
           "power_binary_sensor": "Switch state feedback (optional)",
           "remote_mode": "Control mode",
-          "power_sensor": "Power sensor (optional)",
-          "xiaomi_remote": "Xiaomi remote entity",
-          "xiaomi_ir_device": "IR device name"
+          "power_sensor": "Power sensor (optional)"
         },
         "data_description": {
-          "power_binary_sensor": "Select an existing binary_sensor as the real on/off state (for example a smart plug, TV power sensor, or current-clamp helper). The virtual remote follows that sensor; leave empty to keep ping, power-sensor, or optimistic state.",
-          "xiaomi_remote": "The Xiaomi Home infrared remote (chuangmi.ir.v2) from ha_xiaomi_home.",
-          "xiaomi_ir_device": "Must match the learned IR device name, for example television."
+          "power_binary_sensor": "Select an existing binary_sensor as the real on/off state (for example a smart plug, TV power sensor, or current-clamp helper). The virtual remote follows that sensor; leave empty to keep ping, power-sensor, or optimistic state."
         }
       }
     },
     "error": {
-      "device_ip_required": "Phicomm mode and ADB mode require a device IP.",
-      "xiaomi_remote_required": "Xiaomi universal remote mode requires a Xiaomi Home remote entity."
+      "device_ip_required": "Phicomm mode and ADB mode require a device IP."
     }
   },
   "options": {
@@ -62,27 +46,21 @@
           "power_on_entity": "Power-on entity (optional)",
           "power_binary_sensor": "Switch state feedback (optional)",
           "remote_mode": "Control mode",
-          "power_sensor": "Power sensor (optional)",
-          "xiaomi_remote": "Xiaomi remote entity",
-          "xiaomi_ir_device": "IR device name"
+          "power_sensor": "Power sensor (optional)"
         },
         "data_description": {
-          "power_binary_sensor": "Select an existing binary_sensor as the real on/off state (for example a smart plug, TV power sensor, or current-clamp helper). The virtual remote follows that sensor; leave empty to keep ping, power-sensor, or optimistic state.",
-          "xiaomi_remote": "The Xiaomi Home infrared remote (chuangmi.ir.v2) from ha_xiaomi_home.",
-          "xiaomi_ir_device": "Must match the learned IR device name, for example television."
+          "power_binary_sensor": "Select an existing binary_sensor as the real on/off state (for example a smart plug, TV power sensor, or current-clamp helper). The virtual remote follows that sensor; leave empty to keep ping, power-sensor, or optimistic state."
         }
       },
       "pwr_btn": {
-        "title": "Power buttons",
-        "description": "In Xiaomi mode, enter learned IR command names. Leave empty to use defaults (power / power).",
+        "title": "Power button scripts",
         "data": {
-          "btn_power_on": "Power on command",
-          "btn_power_off": "Power off command"
+          "btn_power_on": "Power on action",
+          "btn_power_off": "Power off action"
         }
       },
       "nav_btn": {
-        "title": "Navigation buttons",
-        "description": "In Xiaomi mode, enter learned IR command names. Defaults: up / down / left / right / select / back / menu.",
+        "title": "Navigation button scripts",
         "data": {
           "arrow_up": "Up",
           "arrow_down": "Down",
@@ -94,8 +72,7 @@
         }
       },
       "media_btn": {
-        "title": "Volume and media buttons",
-        "description": "In Xiaomi mode, enter learned IR command names. Defaults: volume_up / volume_down / mute / play_pause.",
+        "title": "Volume and media scripts",
         "data": {
           "btn_volume_up": "Volume up",
           "btn_volume_down": "Volume down",
@@ -114,8 +91,7 @@
         "title": "Add source",
         "data": {
           "name": "Name",
-          "actions": "Action sequence",
-          "command": "IR command name"
+          "actions": "Action sequence"
         }
       },
       "source_del": {
@@ -131,8 +107,7 @@
       }
     },
     "error": {
-      "device_ip_required": "Phicomm mode and ADB mode require a device IP.",
-      "xiaomi_remote_required": "Xiaomi universal remote mode requires a Xiaomi Home remote entity."
+      "device_ip_required": "Phicomm mode and ADB mode require a device IP."
     },
     "abort": {
       "no_ip": "No device IP is configured, so the app list cannot be synced.",
