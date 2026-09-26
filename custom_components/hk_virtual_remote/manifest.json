@@ -1,9 +1,9 @@
 {
   "domain": "hk_virtual_remote",
   "name": "HomeKit 虚拟遥控器 (Pro)",
+  "after_dependencies": ["xiaomi_home"],
   "codeowners": ["@maozheng92"],
   "config_flow": true,
-  "after_dependencies": ["xiaomi_home"],
   "dependencies": [],
   "documentation": "https://github.com/maozheng92/hk_virtual_remote",
   "iot_class": "local_push",
