@@ -102,6 +102,10 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
         self._power_on_entity = self._config.get(CONF_POWER_ON_ENTITY)
         self._power_sensor = self._config.get(CONF_POWER_SENSOR)
         self._power_binary_sensor = self._config.get(CONF_POWER_BINARY_SENSOR)
+        self._xiaomi_remote = self._config.get(CONF_XIAOMI_REMOTE)
+        self._xiaomi_ir_device = (
+            self._config.get(CONF_XIAOMI_IR_DEVICE) or DEFAULT_XIAOMI_IR_DEVICE
+        )
 
         if self._mode == MODE_ADB and self._ip:
             self._adb = AdbHandler(self.hass, self._ip)
@@ -111,7 +115,7 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
         self._scripts = {}
         for key in KEY_MAP:
             actions = self._config.get(key, [])
-            if actions:
+            if isinstance(actions, list) and actions:
                 self._scripts[key] = Script(
                     self.hass, actions, f"{self._attr_unique_id}_{key}", DOMAIN
                 )
@@ -119,7 +123,7 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
         for src in self._sources:
             sid = src.get(CONF_SOURCE_ID)
             actions = self._config.get(sid)
-            if actions and sid:
+            if sid and isinstance(actions, list) and actions:
                 self._scripts[sid] = Script(
                     self.hass, actions, f"{self._attr_unique_id}_{sid}", DOMAIN
                 )
@@ -192,6 +196,9 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
         elif self._mode == MODE_ADB and self._adb:
             return getattr(self._adb, "_available", False)
 
+        elif self._mode == MODE_XIAOMI:
+            return False
+
         elif self._ip:
             res = await self.hass.async_add_executor_job(
                 os.system, f"ping -c 1 -W 0.5 {self._ip} > /dev/null 2>&1"
@@ -199,6 +206,40 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
             return res == 0
 
         return False
+
+    def _xiaomi_command_for(self, key):
+        override = self._config.get(key)
+        if isinstance(override, str) and override.strip():
+            return override.strip()
+        return DEFAULT_XIAOMI_COMMANDS.get(key)
+
+    async def _async_send_xiaomi_command(self, command):
+        if not command:
+            _LOGGER.warning("小米红外命令为空，跳过发送: %s", self._entry.title)
+            return
+        if not self._xiaomi_remote:
+            _LOGGER.warning("未配置小米万能遥控器实体: %s", self._entry.title)
+            return
+        try:
+            await self.hass.services.async_call(
+                "remote",
+                "send_command",
+                {
+                    "entity_id": self._xiaomi_remote,
+                    "device": self._xiaomi_ir_device,
+                    "command": command,
+                },
+                blocking=True,
+                context=self._script_context(),
+            )
+        except Exception as err:
+            _LOGGER.warning(
+                "小米红外发送失败 remote=%s device=%s command=%s err=%s",
+                self._xiaomi_remote,
+                self._xiaomi_ir_device,
+                command,
+                err,
+            )
 
     async def _async_wait_until_online(self, timeout=ONLINE_WAIT_TIMEOUT_SECONDS):
         deadline = time.time() + timeout
@@ -214,6 +255,10 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
 
         if key in self._scripts:
             await self._scripts[key].async_run(context=self._script_context())
+            return
+
+        if self._mode == MODE_XIAOMI:
+            await self._async_send_xiaomi_command(self._xiaomi_command_for(key))
             return
 
         code = KEY_MAP.get(key)
@@ -270,6 +315,18 @@ class HKVirtualRemote(RestoreEntity, MediaPlayerEntity):
 
         sid = src.get(CONF_SOURCE_ID)
         self._set_boot_grace(ACTIVE_KEY_GRACE_SECONDS)
+
+        if self._mode == MODE_XIAOMI:
+            command = self._config.get(sid)
+            if isinstance(command, str) and command.strip():
+                await self._async_send_xiaomi_command(command.strip())
+            elif sid in self._scripts:
+                await self._scripts[sid].async_run(context=self._script_context())
+            else:
+                _LOGGER.warning("输入源未绑定红外命令: %s source=%s", self._entry.title, source)
+            self._current_source = source
+            self.async_write_ha_state()
+            return
 
         if sid in self._scripts:
             _LOGGER.debug("执行自定义源动作: %s", source)
